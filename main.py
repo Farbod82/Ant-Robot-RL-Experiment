@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 
 class AntRobot():
-    
+        
     def __init__(self):
         self.joints = []
         self.brain = None
@@ -27,10 +27,12 @@ class AntRobot():
         self.brain = Brain(b_model,b_optimizer)
     
     def RunRobot(self):
+        rewardCounter = 0
         env = gym.make('AntPyBulletEnv-v0')
         env.render(mode='human')
         state = env.reset()
         while True:
+    
             action = []
             actions_update = []
             eps = np.random.uniform(low=0,high=1)
@@ -43,6 +45,7 @@ class AntRobot():
                     actions_update.append(acti)
             reward_pred = self.brain.PredictReward(state.tolist()+action)
             new_state, reward, done, info = env.step(action)
+            reward -= rewardCounter
             # print(f"Reward: {reward:.2f}")
             self.brain.UpdateParameters(reward_pred,reward)
             actions_bar = self.brain.TryActions(action,state)
@@ -53,6 +56,7 @@ class AntRobot():
             env.render()  # Render the environment
             # time.sleep(0.1)  # Wait a bit before the next step
             if done:
+                rewardCounter = 0
                 print("Episode finished.")
                 self.eps *= 0.95
                 if self.eps < self.minEps:
@@ -60,13 +64,15 @@ class AntRobot():
                 state = env.reset()
                 x = [i for i in range(len(self.brain.losses))]
                 print(len(x))
-                # time.sleep(0.5)
-                # if len(x) % 1000 == 0:
-                    # print("helllllllllllllllllllllllllo")
-                if (len(x) > 50000):
+                if (len(x) > 20000):
                     plt.plot(x, self.brain.losses)
                     plt.show()
+                    for i in range(8):
+                        x = [j for j in range(len(self.joints[i].loss))]
+                        plt.plot(x,self.joints[i].loss)
+                    plt.show()
                 # break
+            rewardCounter += 0.00001
         env.close()
         
 

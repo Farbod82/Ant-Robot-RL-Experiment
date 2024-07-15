@@ -12,7 +12,6 @@ class BrainModel(nn.Module):
         self.fc3 = nn.Linear(128,64)
         self.fc4 = nn.Linear(64, 32)
         self.fc5 = nn.Linear(32, 1)
-
     def forward(self, x):
         x = self.fc1(x)
         x = F.relu(x)
@@ -32,10 +31,14 @@ class BrainModel(nn.Module):
     
 
 class Brain():
+
     def __init__(self,model,optimizer):
+        self.memorySize = 150
         self.model = model
         self.optimizer = optimizer
         self.losses = []
+        self.memory = np.array((self.memorySize, 28+28+8))
+        self.memoryCounter = 0
     
     def PredictReward(self,x):
         return self.model(torch.tensor(x))
@@ -51,20 +54,23 @@ class Brain():
 
     def TryActions(self,actions,state):
         state = state.tolist()
-        new_actions = actions
-        reward = self.model(torch.tensor(state + actions))
-        for i in range(100):
-            ind = random.randint(0,7)
-            random_float = np.random.uniform(low=-1.0, high=1.0)
-            actions[ind] = random_float
-            self.model.eval()
-            out = self.model(torch.tensor(state + actions))
-            if out > reward:
-                new_actions = actions
-        # eps = np.random.uniform(low=0,high=1)
-        # if (eps < 0.5):
-            # new_actions = np.random.uniform(low=-1,high=1,size=8).tolist()
-        return new_actions
+        inTnesor = torch.tensor(state + actions)
+        inTnesor = torch.nn.Parameter(inTnesor, requires_grad=True)
+        optim = torch.optim.SGD([inTnesor], lr=1e-1)
+        for step in range(15):
+            # Forward pass
+            # inTnesor = torch.tensor(state + x.detach().tolist())
+            output = self.model(inTnesor)
+            # Compute the loss (negative of the output)
+            loss = -output.mean()
 
+            # Backpropagate the gradients
+            loss.backward()
+            # Update the first num_optimized_inputs of the input tensor
+            optim.step()
+            optim.zero_grad()
+            # print(inTnesor)
 
-            
+        return inTnesor.detach()[28:]      
+
+                
