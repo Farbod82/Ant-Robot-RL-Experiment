@@ -42,7 +42,7 @@ class Joint():
     def UpdateParameters(self,A,Ahat):
         self.model.train()
         self.optimizer.zero_grad()
-        lossd = self.model.compute_loss(torch.tensor(A), Ahat)
+        lossd = self.model.compute_loss(torch.tensor([A]), Ahat)
         loss = lossd['loss']
         self.loss.append(loss.item())
         loss.backward()

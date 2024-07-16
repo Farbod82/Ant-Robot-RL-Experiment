@@ -22,7 +22,7 @@ class AntRobot():
             optimizer = torch.optim.AdamW(model.parameters(),lr = 0.001)
             joint = Joint(model,optimizer)
             self.joints.append(joint)
-        b_model = BrainModel()
+        b_model = BrainModel().cuda()
         b_optimizer = torch.optim.AdamW(model.parameters(),lr = 0.001)
         self.brain = Brain(b_model,b_optimizer)
     
@@ -46,13 +46,15 @@ class AntRobot():
             reward_pred = self.brain.PredictReward(state.tolist()+action)
             new_state, reward, done, info = env.step(action)
             reward -= rewardCounter
+            self.brain.updateMemory(np.array(state.tolist()+new_state.tolist()+action+[reward],dtype=float))
             # print(f"Reward: {reward:.2f}")
             self.brain.UpdateParameters(reward_pred,reward)
             actions_bar = self.brain.TryActions(action,state)
+            
             if (eps >= self.eps):
                 for i in range(8):
                     self.joints[i].UpdateParameters(actions_bar[i],actions_update[i])
-            state = new_state
+            state = new_state 
             env.render()  # Render the environment
             # time.sleep(0.1)  # Wait a bit before the next step
             if done:
